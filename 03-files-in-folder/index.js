@@ -1,8 +1,6 @@
 const path = require("path");
-const fs = require("fs");
 const { stat } = require("fs");
 const { readdir } = require("fs/promises");
-const { resolve } = require("path");
 const { stdout } = process;
 
 const targetFolder = "secret-folder";
@@ -40,7 +38,6 @@ function getFileSize(file) {
     file.size = `${(stats.size / 1024).toFixed(3)}KB`;
     stdout.write(`${file.name} - ${file.ext} - ${file.size}\r\n`);
   });
-  
 }
 
 async function getDirFiles() {
