@@ -9,6 +9,8 @@ const srcStylesDirPath = path.join(__dirname, stylesDirName);
 const destCssBundleDirPath = path.join(__dirname, destCssBundleDirName);
 const cssBundleFilePath = path.join(destCssBundleDirPath, cssBundleFileName);
 
+createCssBundleFile();
+
 async function getDirEntries() {
   try {
     const files = await readdir(srcStylesDirPath, { withFileTypes: true });
@@ -61,10 +63,3 @@ async function readCssFiles() {
     });
   }
 }
-
-async function loger() {
-  // console.log(await filterCssFiles());
-  createCssBundleFile();
-}
-
-loger();
