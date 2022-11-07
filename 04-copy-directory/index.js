@@ -41,9 +41,10 @@ async function copyFiles() {
     try {
       await copyFile(srcFilePath, destFilePath);
     } catch {
-      console.log('The file could not be copied');
+      console.log("The file could not be copied");
     }
   }
+  console.log("Files copied");
 }
 
 async function getDirEntries() {
