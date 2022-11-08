@@ -1,6 +1,7 @@
 const path = require("path");
-const { mkdir, rm, readdir, copyFile, readFile } = require("fs/promises");
+const { mkdir, rm, readdir, copyFile } = require("fs/promises");
 const fs = require("fs");
+const { Stream } = require("stream");
 
 const stylesDirName = "styles";
 const destDirName = "project-dist";
@@ -20,29 +21,60 @@ createBuild();
 async function readTemplate() {
   const writableStream = fs.createWriteStream(path.join(destDirPath, "index.html"), "utf-8");
   const readableStream = fs.createReadStream(htmlTemplateFilePath, "utf-8");
-  readableStream.on("data", function(chunk) {
-    let str = chunk;
-    let newChunk = "";
-    for (let i = 0; i < str.length; i++) {
-      if (str[i] === "{" && str[i + 1] === "{") {
-        let moduleName = "";
-        for (let j = i + 2; str.length; j++) {
-          if (str[j] === "}" && str[j + 1] === "}") { 
-            i = j + 1;
+  const modulesList = await getDirEntries(htmlComponentsDirPath);
+  const modulesArr = [];
+  if (modulesList) {
+    for (let module of modulesList) {
+      let modulePath = path.join(htmlComponentsDirPath, module.name);
+      modulesArr.push(
+        {
+          name: module.name,
+          moduleStream: fs.createReadStream(modulePath, "utf-8"),
+        }
+      );
+    }
+  }
+
+  readableStream.on("data", function(mainChunk) {
+    let str = mainChunk;
+
+    findDirecive(str);
+
+    function findDirecive(data) {
+      let str = data;
+      let newStr = "";
+      let startPos = 0;
+    
+      for (let i = 0; i < str.length; i++) {
+        if (str[i] === "{") {
+          startPos = i;
+          break;
+        }
+        newStr += str[i];
+      }
+    
+      writableStream.write(newStr);
+      if (startPos !== 0) {
+        let mdName = "";
+        for (let i = startPos + 2; i < str.length; i++) {
+          if (str[i] === "}") {
+            startPos = i + 2;
             break;
           }
-          moduleName += str[j];
+          mdName += str[i];
         }
-        const modulePath = path.join(htmlComponentsDirPath, `${moduleName}.html`);
-        const readableModule = fs.createReadStream(modulePath, "utf-8");
-        readableModule.on("data", function(chunk) {
-          writableStream.write(chunk);
-        });
-      } else {
-        newChunk += str[i];
+
+        for (let module of modulesArr) {
+          if (module.name === `${mdName}.html`) {
+            module.moduleStream.on("data", function(chunk) {
+              writableStream.write(`${chunk}\r\n`);
+              findDirecive(str.slice(startPos, str.length));
+            });
+          }
+        }
       }
+      return;
     }
-    writableStream.write(newChunk);
   });
 }
 
